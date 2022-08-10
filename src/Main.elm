@@ -1,13 +1,14 @@
 module Main exposing (main)
 
 import Browser exposing (Document)
+import Charts
+import Event exposing (Event)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Iso8601
 import Json.Decode as Decode exposing (Decoder)
-import List.Extra as LE
 import Set exposing (Set)
 import Time exposing (Posix)
 
@@ -15,13 +16,6 @@ import Time exposing (Posix)
 type alias Model =
     { events : List Event
     , country : Maybe String
-    }
-
-
-type alias Event =
-    { date : Posix
-    , country : String
-    , newCases : Int
     }
 
 
@@ -58,37 +52,6 @@ decodeEvents =
         (Decode.field "ConfCases" Decode.int)
 
 
-fromCountry : String -> List Event -> List Event
-fromCountry country =
-    List.filter (.country >> (==) country)
-
-
-accumulate : List Event -> List ( Int, Event )
-accumulate =
-    List.foldl
-        (\event acc ->
-            ( event.newCases
-                + (acc
-                    |> List.head
-                    |> Maybe.map Tuple.first
-                    |> Maybe.withDefault 0
-                  )
-            , event
-            )
-                :: acc
-        )
-        []
-        >> List.reverse
-
-
-total : List Event -> Maybe ( Posix, Int )
-total events =
-    events
-        |> accumulate
-        |> LE.last
-        |> Maybe.map (\( tot, { date } ) -> ( date, tot ))
-
-
 formatDate : Posix -> String
 formatDate =
     Iso8601.fromTime
@@ -118,7 +81,7 @@ view model =
         selectedEvents =
             case model.country of
                 Just c ->
-                    allEvents |> fromCountry c
+                    allEvents |> Event.fromCountry c
 
                 Nothing ->
                     allEvents
@@ -127,7 +90,7 @@ view model =
     , body =
         [ div [ class "container py-4" ]
             [ h1 [] [ text "Monkeypox stats" ]
-            , case total allEvents of
+            , case Event.total allEvents of
                 Just ( date, tot ) ->
                     p [ class "text-muted fw-bold" ]
                         [ text <| String.fromInt tot ++ " confirmed cases as of " ++ formatDate date ++ " in Europe" ]
@@ -167,7 +130,7 @@ view model =
                 [ model.country
                     |> Maybe.withDefault "Tous les pays"
                     |> text
-                , case total selectedEvents of
+                , case Event.total selectedEvents of
                     Just ( date, tot ) ->
                         small [ class "text-muted fs-5 ms-2" ]
                             [ text <| String.fromInt tot ++ " confirmed cases as of " ++ formatDate date ]
@@ -175,9 +138,15 @@ view model =
                     Nothing ->
                         text ""
                 ]
+            , selectedEvents
+                |> Event.accumulate
+                |> List.map (\( tot, { date } ) -> { date = toFloat (Time.posixToMillis date), total = toFloat tot })
+                |> Charts.view
+
+            -- , Charts.view2
             , pre []
                 [ selectedEvents
-                    |> accumulate
+                    |> Event.accumulate
                     |> Debug.toString
                     |> String.replace "),(" "),\n("
                     |> text
