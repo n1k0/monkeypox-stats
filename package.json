@@ -4,7 +4,7 @@
   "description": "monkeypox tracker",
   "private": true,
   "scripts": {
-    "deploy": "rimraf dist && parcel build index.html && gh-pages --dist dist/",
+    "deploy": "rimraf build && parcel build index.html --dist-dir build --public-url /monkeypox-stats && gh-pages --dist build/",
     "start": "PARCEL_ELM_NO_DEBUG=1 parcel serve index.html --no-cache",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
