@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "description": "monkeypox tracker",
   "private": true,
-  "main": "index.js",
   "scripts": {
+    "deploy": "rimraf dist && parcel build index.html && gh-pages --dist dist/",
     "start": "PARCEL_ELM_NO_DEBUG=1 parcel serve index.html --no-cache",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,6 +16,8 @@
     "@parcel/transformer-sass": "^2.6.2",
     "bootstrap": "^5.2.0",
     "elm-format": "^0.8.5",
-    "parcel": "^2.7.0"
+    "gh-pages": "^4.0.0",
+    "parcel": "^2.7.0",
+    "rimraf": "^3.0.2"
   }
 }
