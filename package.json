@@ -11,9 +11,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "parcel": "^2.7.0",
     "@parcel/transformer-elm": "^2.6.2",
     "@parcel/transformer-image": "^2.6.2",
-    "@parcel/transformer-sass": "^2.6.2"
+    "@parcel/transformer-sass": "^2.6.2",
+    "bootstrap": "^5.2.0",
+    "elm-format": "^0.8.5",
+    "parcel": "^2.7.0"
   }
 }
