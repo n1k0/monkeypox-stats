@@ -1,0 +1,19 @@
+{
+  "name": "monkeypox-stats",
+  "version": "0.0.1",
+  "description": "monkeypox tracker",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "PARCEL_ELM_NO_DEBUG=1 parcel serve index.html --no-cache",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "parcel": "^2.7.0",
+    "@parcel/transformer-elm": "^2.6.2",
+    "@parcel/transformer-image": "^2.6.2",
+    "@parcel/transformer-sass": "^2.6.2"
+  }
+}
