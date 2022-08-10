@@ -140,7 +140,7 @@ view model =
                 ]
             , selectedEvents
                 |> Event.accumulate
-                |> List.map (\( tot, { date } ) -> { date = toFloat (Time.posixToMillis date), total = toFloat tot })
+                |> List.map (\( tot, { date } ) -> { date = date, total = tot })
                 |> Charts.view
 
             -- , Charts.view2
