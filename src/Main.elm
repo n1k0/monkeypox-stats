@@ -16,17 +16,22 @@ import Time exposing (Posix)
 type alias Model =
     { events : List Event
     , country : Maybe String
+    , hovering : List Charts.Hovered
     }
 
 
 type Msg
     = DataReceived (Result Http.Error (List Event))
+    | OnHover (List Charts.Hovered)
     | SwitchCountry (Maybe String)
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { events = [], country = Nothing }
+    ( { events = []
+      , country = Nothing
+      , hovering = []
+      }
     , Http.get
         { url = dataUrl
         , expect = Http.expectJson DataReceived (Decode.list decodeEvents)
@@ -66,6 +71,9 @@ update msg model =
 
         DataReceived (Err _) ->
             ( model, Cmd.none )
+
+        OnHover hovering ->
+            ( { model | hovering = hovering }, Cmd.none )
 
         SwitchCountry country ->
             ( { model | country = country }, Cmd.none )
@@ -142,8 +150,10 @@ view model =
                 |> Event.accumulate
                 |> List.map (\( tot, { date } ) -> { date = date, total = tot })
                 |> Charts.view
-
-            -- , Charts.view2
+                    { hovering = model.hovering
+                    , onHover = OnHover
+                    , pointLabel = "Confirmed cases"
+                    }
             , pre []
                 [ selectedEvents
                     |> Event.accumulate
