@@ -12,22 +12,23 @@ import Time exposing (Posix)
 type alias Event =
     { date : Posix
     , country : String
-    , newCases : Int
+    , cases : Int
     }
 
 
-accumulate : List Event -> List ( Int, Event )
+accumulate : List Event -> List Event
 accumulate =
     List.foldl
         (\event acc ->
-            ( event.newCases
-                + (acc
-                    |> List.head
-                    |> Maybe.map Tuple.first
-                    |> Maybe.withDefault 0
-                  )
-            , event
-            )
+            { event
+                | cases =
+                    event.cases
+                        + (acc
+                            |> List.head
+                            |> Maybe.map .cases
+                            |> Maybe.withDefault 0
+                          )
+            }
                 :: acc
         )
         []
@@ -40,8 +41,7 @@ fromCountry country =
 
 
 total : List Event -> Maybe ( Posix, Int )
-total events =
-    events
-        |> accumulate
-        |> LE.last
-        |> Maybe.map (\( tot, { date } ) -> ( date, tot ))
+total =
+    accumulate
+        >> LE.last
+        >> Maybe.map (\{ date, cases } -> ( date, cases ))

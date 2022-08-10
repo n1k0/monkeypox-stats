@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import Browser exposing (Document)
 import Charts
+import Dict exposing (Dict)
 import Event exposing (Event)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -16,13 +17,13 @@ import Time exposing (Posix)
 type alias Model =
     { events : List Event
     , country : Maybe String
-    , hovering : List Charts.Hovered
+    , hovering : Dict String (List Charts.Hovered)
     }
 
 
 type Msg
     = DataReceived (Result Http.Error (List Event))
-    | OnHover (List Charts.Hovered)
+    | OnHover String (List Charts.Hovered)
     | SwitchCountry (Maybe String)
 
 
@@ -30,7 +31,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { events = []
       , country = Nothing
-      , hovering = []
+      , hovering = Dict.fromList []
       }
     , Http.get
         { url = dataUrl
@@ -72,11 +73,53 @@ update msg model =
         DataReceived (Err _) ->
             ( model, Cmd.none )
 
-        OnHover hovering ->
-            ( { model | hovering = hovering }, Cmd.none )
+        OnHover country hovering ->
+            ( { model
+                | hovering =
+                    model.hovering
+                        |> Dict.insert country hovering
+              }
+            , Cmd.none
+            )
 
         SwitchCountry country ->
             ( { model | country = country }, Cmd.none )
+
+
+viewCountry : Model -> String -> Html Msg
+viewCountry { hovering, events } country =
+    let
+        countryEvents =
+            events
+                |> Event.fromCountry country
+    in
+    div [ class "col" ]
+        [ div [ class "card h-100" ]
+            [ div [ class "card-header d-flex justify-content-between" ]
+                [ span [] [ text country ]
+                , span []
+                    [ case Event.total countryEvents of
+                        Just ( date, tot ) ->
+                            small [ class "text-muted fs-7 ms-2" ]
+                                [ text <| String.fromInt tot ++ " tot. on " ++ formatDate date ]
+
+                        Nothing ->
+                            text ""
+                    ]
+                ]
+            , div [ class "card-body p-2" ]
+                [ countryEvents
+                    |> Event.accumulate
+                    |> Charts.view
+                        { hovering = hovering |> Dict.get country |> Maybe.withDefault []
+                        , onHover = OnHover country
+                        , pointLabel = "Confirmed cases"
+                        , width = 450
+                        , height = 280
+                        }
+                ]
+            ]
+        ]
 
 
 view : Model -> Document Msg
@@ -97,70 +140,28 @@ view model =
     { title = "Monkeypox stats"
     , body =
         [ div [ class "container py-4" ]
-            [ h1 [] [ text "Monkeypox stats" ]
+            [ h1 [] [ text "Monkeypox stats for EU" ]
             , case Event.total allEvents of
                 Just ( date, tot ) ->
                     p [ class "text-muted fw-bold" ]
-                        [ text <| String.fromInt tot ++ " confirmed cases as of " ++ formatDate date ++ " in Europe" ]
+                        [ text <| String.fromInt tot ++ " total confirmed cases as of " ++ formatDate date ++ " in Europe" ]
 
                 Nothing ->
                     text ""
             , allEvents
                 |> countries
                 |> Set.toList
-                |> (::) ""
-                |> List.map
-                    (\c ->
-                        option [ value c, selected <| model.country == Just c ]
-                            [ text <|
-                                if c == "" then
-                                    "All countries"
-
-                                else
-                                    c
-                            ]
-                    )
-                |> select
-                    [ class "form-select"
-                    , onInput
-                        (\s ->
-                            SwitchCountry
-                                (case s of
-                                    "" ->
-                                        Nothing
-
-                                    c ->
-                                        Just c
-                                )
-                        )
-                    ]
-            , h2 []
-                [ model.country
-                    |> Maybe.withDefault "Tous les pays"
-                    |> text
-                , case Event.total selectedEvents of
-                    Just ( date, tot ) ->
-                        small [ class "text-muted fs-5 ms-2" ]
-                            [ text <| String.fromInt tot ++ " confirmed cases as of " ++ formatDate date ]
-
-                    Nothing ->
-                        text ""
-                ]
+                |> List.map (viewCountry model)
+                |> div [ class "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4" ]
             , selectedEvents
                 |> Event.accumulate
-                |> List.map (\( tot, { date } ) -> { date = date, total = tot })
                 |> Charts.view
-                    { hovering = model.hovering
-                    , onHover = OnHover
+                    { hovering = model.hovering |> Dict.get "" |> Maybe.withDefault []
+                    , onHover = OnHover ""
                     , pointLabel = "Confirmed cases"
+                    , width = 450 * 3
+                    , height = 280 * 3
                     }
-            , pre []
-                [ selectedEvents
-                    |> Event.accumulate
-                    |> Debug.toString
-                    |> String.replace "),(" "),\n("
-                    |> text
-                ]
             , p []
                 [ a [ href "https://www.ecdc.europa.eu/en/publications-data/data-monkeypox-cases-eueea" ]
                     [ text "Data source" ]
