@@ -7,6 +7,7 @@ import Html.Events exposing (..)
 import Http
 import Iso8601
 import Json.Decode as Decode exposing (Decoder)
+import List.Extra as LE
 import Set exposing (Set)
 import Time exposing (Posix)
 
@@ -77,6 +78,21 @@ accumulate =
                 :: acc
         )
         []
+        >> List.reverse
+
+
+total : List Event -> Maybe ( Posix, Int )
+total events =
+    events
+        |> accumulate
+        |> LE.last
+        |> Maybe.map (\( tot, { date } ) -> ( date, tot ))
+
+
+formatDate : Posix -> String
+formatDate =
+    Iso8601.fromTime
+        >> String.dropRight 14
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -94,11 +110,31 @@ update msg model =
 
 view : Model -> Document Msg
 view model =
+    let
+        allEvents =
+            model.events
+                |> List.sortBy (.date >> Time.posixToMillis)
+
+        selectedEvents =
+            case model.country of
+                Just c ->
+                    allEvents |> fromCountry c
+
+                Nothing ->
+                    allEvents
+    in
     { title = "Monkeypox stats"
     , body =
         [ div [ class "container py-4" ]
             [ h1 [] [ text "Monkeypox stats" ]
-            , model.events
+            , case total allEvents of
+                Just ( date, tot ) ->
+                    p [ class "text-muted fw-bold" ]
+                        [ text <| String.fromInt tot ++ " confirmed cases as of " ++ formatDate date ++ " in Europe" ]
+
+                Nothing ->
+                    text ""
+            , allEvents
                 |> countries
                 |> Set.toList
                 |> (::) ""
@@ -131,17 +167,16 @@ view model =
                 [ model.country
                     |> Maybe.withDefault "Tous les pays"
                     |> text
+                , case total selectedEvents of
+                    Just ( date, tot ) ->
+                        small [ class "text-muted fs-5 ms-2" ]
+                            [ text <| String.fromInt tot ++ " confirmed cases as of " ++ formatDate date ]
+
+                    Nothing ->
+                        text ""
                 ]
             , pre []
-                [ model.events
-                    |> List.sortBy (.date >> Time.posixToMillis)
-                    |> (case model.country of
-                            Just c ->
-                                fromCountry c
-
-                            Nothing ->
-                                identity
-                       )
+                [ selectedEvents
                     |> accumulate
                     |> Debug.toString
                     |> String.replace "),(" "),\n("
