@@ -118,6 +118,7 @@ viewEurope { events, hovering, mode } =
         [ div [ class "card-header" ] [ text "Europe" ]
         , div [ class "card-body" ]
             [ events
+                |> Event.sumByDate "Europe"
                 |> (case mode of
                         Cumulative ->
                             Event.accumulate

@@ -5,6 +5,7 @@ module Event exposing
     , decodeList
     , formatDate
     , fromCountry
+    , sumByDate
     , total
     )
 
@@ -68,6 +69,20 @@ formatDate =
 fromCountry : String -> List Event -> List Event
 fromCountry country =
     List.filter (.country >> (==) country)
+
+
+sumByDate : String -> List Event -> List Event
+sumByDate label events =
+    events
+        |> List.sortBy (.date >> Time.posixToMillis)
+        |> LE.groupWhile (\a b -> a.date == b.date)
+        |> List.map
+            (\( event, list ) ->
+                { event
+                    | country = label
+                    , cases = event.cases + (list |> List.map .cases |> List.sum)
+                }
+            )
 
 
 total : List Event -> Maybe ( Posix, Int )
