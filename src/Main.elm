@@ -8,10 +8,8 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Iso8601
-import Json.Decode as Decode exposing (Decoder)
-import Set exposing (Set)
-import Time exposing (Posix)
+import Set
+import Time
 
 
 type alias Model =
@@ -40,7 +38,7 @@ init _ =
       }
     , Http.get
         { url = dataUrl
-        , expect = Http.expectJson DataReceived (Decode.list decodeEvents)
+        , expect = Http.expectJson DataReceived Event.decodeList
         }
     )
 
@@ -48,25 +46,6 @@ init _ =
 dataUrl : String
 dataUrl =
     "https://opendata.ecdc.europa.eu/monkeypox/casedistribution/json/data.json"
-
-
-countries : List Event -> Set String
-countries =
-    List.map .country >> Set.fromList
-
-
-decodeEvents : Decoder Event
-decodeEvents =
-    Decode.map3 Event
-        (Decode.field "DateRep" Iso8601.decoder)
-        (Decode.field "CountryExp" Decode.string)
-        (Decode.field "ConfCases" Decode.int)
-
-
-formatDate : Posix -> String
-formatDate =
-    Iso8601.fromTime
-        >> String.dropRight 14
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -106,7 +85,7 @@ viewCountry { hovering, events, mode } country =
                     [ case Event.total countryEvents of
                         Just ( date, tot ) ->
                             small [ class "text-muted fs-7 ms-2" ]
-                                [ text <| String.fromInt tot ++ " tot. on " ++ formatDate date ]
+                                [ text <| String.fromInt tot ++ " tot. on " ++ Event.formatDate date ]
 
                         Nothing ->
                             text ""
@@ -164,7 +143,7 @@ view model =
             model.events
                 |> List.sortBy (.date >> Time.posixToMillis)
     in
-    { title = "Monkeypox stats"
+    { title = "Monkeypox stats EU"
     , body =
         [ div [ class "container py-4" ]
             [ h1 [ class "mb-3" ] [ text "Monkeypox stats for EU" ]
@@ -176,7 +155,7 @@ view model =
                                 [ text <|
                                     String.fromInt tot
                                         ++ " total confirmed cases as of "
-                                        ++ formatDate date
+                                        ++ Event.formatDate date
                                         ++ " in Europe — Source: "
                                 , a [ href "https://www.ecdc.europa.eu/en/publications-data/data-monkeypox-cases-eueea" ]
                                     [ text "ECDC" ]
@@ -211,7 +190,7 @@ view model =
                     ]
                 ]
             , viewEurope model
-            , countries allEvents
+            , Event.countries allEvents
                 |> Set.toList
                 |> List.map (viewCountry model)
                 |> div [ class "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 my-3" ]

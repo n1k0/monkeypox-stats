@@ -1,11 +1,17 @@
 module Event exposing
     ( Event
     , accumulate
+    , countries
+    , decodeList
+    , formatDate
     , fromCountry
     , total
     )
 
+import Iso8601
+import Json.Decode as Decode exposing (Decoder)
 import List.Extra as LE
+import Set exposing (Set)
 import Time exposing (Posix)
 
 
@@ -33,6 +39,30 @@ accumulate =
         )
         []
         >> List.reverse
+
+
+countries : List Event -> Set String
+countries =
+    List.map .country >> Set.fromList
+
+
+decode : Decoder Event
+decode =
+    Decode.map3 Event
+        (Decode.field "DateRep" Iso8601.decoder)
+        (Decode.field "CountryExp" Decode.string)
+        (Decode.field "ConfCases" Decode.int)
+
+
+decodeList : Decoder (List Event)
+decodeList =
+    Decode.list decode
+
+
+formatDate : Posix -> String
+formatDate =
+    Iso8601.fromTime
+        >> String.dropRight 14
 
 
 fromCountry : String -> List Event -> List Event

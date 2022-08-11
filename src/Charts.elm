@@ -6,6 +6,7 @@ import Chart.Events as CE
 import Chart.Item as CI
 import Event exposing (Event)
 import Html as H
+import Html.Attributes as HA
 import Time
 
 
@@ -59,5 +60,30 @@ view { hovering, onHover, pointLabel, width, height } events =
                 ]
         , C.each hovering <|
             \_ item ->
-                [ C.tooltip item [] [] [] ]
+                let
+                    ( event, color ) =
+                        ( CI.getData item, CI.getColor item )
+                in
+                [ C.tooltip item [] [] [ tooltip color event ]
+                ]
+        ]
+
+
+tooltip : String -> Event -> H.Html msg
+tooltip color { date, cases } =
+    H.span []
+        [ H.span []
+            [ H.text (Event.formatDate date) ]
+        , H.span [ HA.style "color" color ]
+            [ H.text ": "
+            , H.text (String.fromInt cases)
+            , H.text <|
+                " case"
+                    ++ (if cases == 1 then
+                            ""
+
+                        else
+                            "s"
+                       )
+            ]
         ]
