@@ -70,20 +70,23 @@ view { hovering, onHover, pointLabel, width, height } events =
 
 
 tooltip : String -> Event -> H.Html msg
-tooltip color { date, cases } =
+tooltip color { country, date, cases } =
     H.span []
-        [ H.span []
+        [ H.div []
             [ H.text (Event.formatDate date) ]
-        , H.span [ HA.style "color" color ]
-            [ H.text ": "
-            , H.text (String.fromInt cases)
-            , H.text <|
-                " case"
-                    ++ (if cases == 1 then
-                            ""
+        , H.div []
+            [ H.text country
+            , H.span [ HA.style "color" color ]
+                [ H.text ": "
+                , H.text (String.fromInt cases)
+                , H.text <|
+                    " case"
+                        ++ (if cases == 1 then
+                                ""
 
-                        else
-                            "s"
-                       )
+                            else
+                                "s"
+                           )
+                ]
             ]
         ]
