@@ -127,8 +127,8 @@ viewEurope { events, hovering, mode } =
                             identity
                    )
                 |> Charts.view
-                    { hovering = hovering |> Dict.get "" |> Maybe.withDefault []
-                    , onHover = OnHover ""
+                    { hovering = hovering |> Dict.get "Europe" |> Maybe.withDefault []
+                    , onHover = OnHover "Europe"
                     , pointLabel = "Confirmed cases"
                     , width = 450 * 3
                     , height = 280 * 2
