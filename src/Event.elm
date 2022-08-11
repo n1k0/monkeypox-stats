@@ -66,8 +66,12 @@ decodeList =
 
 
 formatCases : Float -> String
-formatCases =
-    FormatNumber.format { usLocale | decimals = Exact 2 }
+formatCases n =
+    if n - toFloat (round n) /= 0 then
+        FormatNumber.format { usLocale | decimals = Exact 2 } n
+
+    else
+        String.fromFloat n
 
 
 formatDate : Posix -> String
