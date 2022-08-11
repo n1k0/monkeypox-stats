@@ -8,19 +8,20 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
+import RemoteData exposing (WebData)
 import Set
 import Time
 
 
 type alias Model =
     { mode : Mode
-    , events : List Event
+    , events : WebData (List Event)
     , hovering : Dict String (List Charts.Hovered)
     }
 
 
 type Msg
-    = DataReceived (Result Http.Error (List Event))
+    = DataReceived (WebData (List Event))
     | OnHover String (List Charts.Hovered)
     | SwitchMode Mode
 
@@ -34,12 +35,14 @@ type Mode
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { mode = Cumulative
-      , events = []
+      , events = RemoteData.Loading
       , hovering = Dict.fromList []
       }
     , Http.get
         { url = dataUrl
-        , expect = Http.expectJson DataReceived Event.decodeList
+        , expect =
+            Event.decodeList
+                |> Http.expectJson (RemoteData.fromResult >> DataReceived)
         }
     )
 
@@ -52,11 +55,8 @@ dataUrl =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        DataReceived (Ok events) ->
+        DataReceived events ->
             ( { model | events = events }, Cmd.none )
-
-        DataReceived (Err _) ->
-            ( model, Cmd.none )
 
         OnHover country hovering ->
             ( { model
@@ -127,79 +127,107 @@ viewCard { country, events, hovering, mode, width, height } =
         ]
 
 
-view : Model -> Document Msg
-view model =
+viewEvents : Model -> List Event -> List (Html Msg)
+viewEvents model events =
     let
         allEvents =
-            model.events
+            events
                 |> List.sortBy (.date >> Time.posixToMillis)
     in
+    [ div [ class "row align-items-end my-3" ]
+        [ div [ class "col-md-6 col-lg-7 my-2" ]
+            [ case Event.total allEvents of
+                Just ( date, tot ) ->
+                    div [ class "text-muted fw-bold" ]
+                        [ text <|
+                            String.fromFloat tot
+                                ++ " total confirmed cases as of "
+                                ++ Event.formatDate date
+                                ++ " in Europe — Source: "
+                        , a [ href "https://www.ecdc.europa.eu/en/publications-data/data-monkeypox-cases-eueea" ]
+                            [ text "ECDC" ]
+                        ]
+
+                Nothing ->
+                    text ""
+            ]
+        , [ ( Cumulative, "Cumulative" )
+          , ( PerDay, "Per-day" )
+          , ( SevenDaysAverage, "7 days average" )
+          ]
+            |> List.map
+                (\( mode, caption ) ->
+                    label [ class "form-check-label text-nowrap" ]
+                        [ input
+                            [ type_ "radio"
+                            , class "form-check-input"
+                            , name "mode"
+                            , checked <| model.mode == mode
+                            , onCheck (always (SwitchMode mode))
+                            ]
+                            []
+                        , span [ class "ms-2" ] [ text caption ]
+                        ]
+                )
+            |> div [ class "col-md-6 col-lg-5 my-2 d-flex justify-content-center justify-content-md-end gap-4" ]
+        ]
+    , viewCard
+        { country = Nothing
+        , events = allEvents
+        , mode = model.mode
+        , hovering = model.hovering
+        , width = 450 * 3
+        , height = 280 * 2
+        }
+    , Event.countries allEvents
+        |> Set.toList
+        |> List.map
+            (\country ->
+                div [ class "col" ]
+                    [ viewCard
+                        { country = Just country
+                        , events = allEvents
+                        , mode = model.mode
+                        , hovering = model.hovering
+                        , width = 450
+                        , height = 280
+                        }
+                    ]
+            )
+        |> div [ class "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 my-3" ]
+    ]
+
+
+view : Model -> Document Msg
+view model =
     { title = "Monkeypox stats EU"
     , body =
         [ div [ class "container py-4" ]
             [ h1 [ class "mb-3" ] [ text "Monkeypox stats for EU" ]
-            , div [ class "row my-2 align-items-end" ]
-                [ div [ class "col-md-6 col-lg-7 my-2" ]
-                    [ case Event.total allEvents of
-                        Just ( date, tot ) ->
-                            div [ class "text-muted fw-bold" ]
-                                [ text <|
-                                    String.fromFloat tot
-                                        ++ " total confirmed cases as of "
-                                        ++ Event.formatDate date
-                                        ++ " in Europe — Source: "
-                                , a [ href "https://www.ecdc.europa.eu/en/publications-data/data-monkeypox-cases-eueea" ]
-                                    [ text "ECDC" ]
-                                ]
+            , main_ [ class "my-3" ]
+                (case model.events of
+                    RemoteData.NotAsked ->
+                        []
 
-                        Nothing ->
-                            text ""
-                    ]
-                , [ ( Cumulative, "Cumulative" )
-                  , ( PerDay, "Per-day" )
-                  , ( SevenDaysAverage, "7 days average" )
-                  ]
-                    |> List.map
-                        (\( mode, caption ) ->
-                            label [ class "form-check-label text-nowrap" ]
-                                [ input
-                                    [ type_ "radio"
-                                    , class "form-check-input"
-                                    , name "mode"
-                                    , checked <| model.mode == mode
-                                    , onCheck (always (SwitchMode mode))
-                                    ]
-                                    []
-                                , span [ class "ms-2" ] [ text caption ]
-                                ]
-                        )
-                    |> div [ class "col-md-6 col-lg-5 my-2 d-flex justify-content-center justify-content-md-end gap-4" ]
-                ]
-            , viewCard
-                { country = Nothing
-                , events = model.events
-                , mode = model.mode
-                , hovering = model.hovering
-                , width = 450 * 3
-                , height = 280 * 2
-                }
-            , Event.countries allEvents
-                |> Set.toList
-                |> List.map
-                    (\country ->
-                        div [ class "col" ]
-                            [ viewCard
-                                { country = Just country
-                                , events = model.events
-                                , mode = model.mode
-                                , hovering = model.hovering
-                                , width = 450
-                                , height = 280
-                                }
+                    RemoteData.Loading ->
+                        [ div
+                            [ class "d-flex flex-column gap-3 justify-content-center align-items-center"
+                            , style "min-height" "350px"
                             ]
-                    )
-                |> div [ class "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 my-3" ]
-            , p [ class "d-flex justify-content-center gap-5" ]
+                            [ div [ class "spinner-border text-primary", attribute "role" "status" ] []
+                            , p [ class "text-muted" ] [ text "Loading…" ]
+                            ]
+                        ]
+
+                    RemoteData.Failure error ->
+                        [ div [ class "alert alert-info" ]
+                            [ text <| errorToString error ]
+                        ]
+
+                    RemoteData.Success events ->
+                        viewEvents model events
+                )
+            , footer [ class "d-flex justify-content-center gap-5 mt-3" ]
                 [ a [ href "https://www.ecdc.europa.eu/en/publications-data/data-monkeypox-cases-eueea" ]
                     [ text "Data source" ]
                 , a [ href "https://github.com/n1k0/monkeypox-stats" ] [ text "Source code" ]
@@ -208,6 +236,31 @@ view model =
             ]
         ]
     }
+
+
+errorToString : Http.Error -> String
+errorToString error =
+    case error of
+        Http.BadUrl url ->
+            "The URL " ++ url ++ " was invalid"
+
+        Http.Timeout ->
+            "Unable to reach the server, try again"
+
+        Http.NetworkError ->
+            "Unable to reach the server, check your network connection"
+
+        Http.BadStatus 500 ->
+            "The server had a problem, try again later"
+
+        Http.BadStatus 400 ->
+            "Verify your information and try again"
+
+        Http.BadStatus _ ->
+            "Unknown error"
+
+        Http.BadBody errorMessage ->
+            errorMessage
 
 
 main : Program () Model Msg
