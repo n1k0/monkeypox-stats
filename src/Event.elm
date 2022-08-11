@@ -9,6 +9,7 @@ module Event exposing
     , total
     )
 
+import DateFormat
 import Iso8601
 import Json.Decode as Decode exposing (Decoder)
 import List.Extra as LE
@@ -62,8 +63,14 @@ decodeList =
 
 formatDate : Posix -> String
 formatDate =
-    Iso8601.fromTime
-        >> String.dropRight 14
+    DateFormat.format
+        [ DateFormat.monthNameAbbreviated
+        , DateFormat.text " "
+        , DateFormat.dayOfMonthSuffix
+        , DateFormat.text ", "
+        , DateFormat.yearNumber
+        ]
+        Time.utc
 
 
 fromCountry : String -> List Event -> List Event
