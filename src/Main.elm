@@ -71,58 +71,42 @@ update msg model =
             ( { model | mode = mode }, Cmd.none )
 
 
-viewCountry : Model -> String -> Html Msg
-viewCountry { hovering, events, mode } country =
+type alias CardConfig =
+    { country : Maybe String
+    , events : List Event
+    , mode : Mode
+    , hovering : Dict String (List Charts.Hovered)
+    , width : Float
+    , height : Float
+    }
+
+
+viewCard : CardConfig -> Html Msg
+viewCard { country, events, hovering, mode, width, height } =
     let
-        countryEvents =
-            events
-                |> Event.fromCountry country
+        ( selectedEvents, countryId ) =
+            case country of
+                Just c ->
+                    ( Event.fromCountry c events, c )
+
+                Nothing ->
+                    ( Event.sumByDate "Europe" events, "Europe" )
     in
-    div [ class "col" ]
-        [ div [ class "card h-100" ]
-            [ div [ class "card-header d-flex justify-content-between" ]
-                [ span [] [ text country ]
-                , span []
-                    [ case Event.total countryEvents of
-                        Just ( date, tot ) ->
-                            small [ class "text-muted fs-7 ms-2" ]
-                                [ text <| String.fromFloat tot ++ " tot. on " ++ Event.formatDate date ]
+    div [ class "card h-100" ]
+        [ div [ class "card-header d-flex justify-content-between" ]
+            [ span [] [ country |> Maybe.withDefault "Europe" |> text ]
+            , span []
+                [ case Event.total selectedEvents of
+                    Just ( date, tot ) ->
+                        small [ class "text-muted fs-7 ms-2" ]
+                            [ text <| String.fromFloat tot ++ " tot. on " ++ Event.formatDate date ]
 
-                        Nothing ->
-                            text ""
-                    ]
-                ]
-            , div [ class "card-body p-2" ]
-                [ countryEvents
-                    |> (case mode of
-                            Cumulative ->
-                                Event.accumulate
-
-                            PerDay ->
-                                identity
-
-                            SevenDaysAverage ->
-                                Event.sevenDaysAverage country
-                       )
-                    |> Charts.view
-                        { hovering = hovering |> Dict.get country |> Maybe.withDefault []
-                        , onHover = OnHover country
-                        , pointLabel = "Confirmed cases"
-                        , width = 450
-                        , height = 280
-                        }
+                    Nothing ->
+                        text ""
                 ]
             ]
-        ]
-
-
-viewEurope : Model -> Html Msg
-viewEurope { events, hovering, mode } =
-    div [ class "card my-3" ]
-        [ div [ class "card-header" ] [ text "Europe" ]
         , div [ class "card-body" ]
-            [ events
-                |> Event.sumByDate "Europe"
+            [ selectedEvents
                 |> (case mode of
                         Cumulative ->
                             Event.accumulate
@@ -131,14 +115,13 @@ viewEurope { events, hovering, mode } =
                             identity
 
                         SevenDaysAverage ->
-                            Event.sevenDaysAverage "Europe"
+                            Event.sevenDaysAverage countryId
                    )
                 |> Charts.view
-                    { hovering = hovering |> Dict.get "Europe" |> Maybe.withDefault []
-                    , onHover = OnHover "Europe"
-                    , pointLabel = "Confirmed cases"
-                    , width = 450 * 3
-                    , height = 280 * 2
+                    { hovering = hovering |> Dict.get countryId |> Maybe.withDefault []
+                    , onHover = OnHover countryId
+                    , width = width
+                    , height = height
                     }
             ]
         ]
@@ -192,10 +175,29 @@ view model =
                         )
                     |> div [ class "col-md-4 d-flex justify-content-center justify-content-md-end gap-4" ]
                 ]
-            , viewEurope model
+            , viewCard
+                { country = Nothing
+                , events = model.events
+                , mode = model.mode
+                , hovering = model.hovering
+                , width = 450 * 3
+                , height = 280 * 2
+                }
             , Event.countries allEvents
                 |> Set.toList
-                |> List.map (viewCountry model)
+                |> List.map
+                    (\country ->
+                        div [ class "col" ]
+                            [ viewCard
+                                { country = Just country
+                                , events = model.events
+                                , mode = model.mode
+                                , hovering = model.hovering
+                                , width = 450
+                                , height = 280
+                                }
+                            ]
+                    )
                 |> div [ class "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 my-3" ]
             , p [ class "d-flex justify-content-center gap-5" ]
                 [ a [ href "https://www.ecdc.europa.eu/en/publications-data/data-monkeypox-cases-eueea" ]

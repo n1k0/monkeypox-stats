@@ -17,14 +17,13 @@ type alias Hovered =
 type alias Config msg =
     { onHover : List Hovered -> msg
     , hovering : List Hovered
-    , pointLabel : String
     , width : Float
     , height : Float
     }
 
 
 view : Config msg -> List Event -> H.Html msg
-view { hovering, onHover, pointLabel, width, height } events =
+view { hovering, onHover, width, height } events =
     C.chart
         [ CA.width width
         , CA.height height
@@ -56,7 +55,6 @@ view { hovering, onHover, pointLabel, width, height } events =
         , events
             |> C.series (.date >> Time.posixToMillis >> toFloat)
                 [ C.interpolated .cases [ CA.width 2 ] []
-                    |> C.named pointLabel
                 ]
         , C.each hovering <|
             \_ item ->
