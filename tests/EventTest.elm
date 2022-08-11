@@ -12,13 +12,13 @@ suite =
         [ test "should compute a 7 days average timeserie" <|
             \_ ->
                 List.range 1 10
-                    |> List.map (\x -> Event (Time.millisToPosix 0) "France" (toFloat x))
+                    |> List.map (\x -> Event (Time.millisToPosix x) "France" (toFloat x))
                     |> Event.sevenDaysAverage "France"
-                    |> List.map .cases
+                    |> List.map (\{ date, cases } -> ( Time.posixToMillis date, cases ))
                     |> Expect.equal
-                        [ 4 -- (1+2+3+4+5+6+7)/7
-                        , 5 -- (2+3+4+5+6+7+8)/7
-                        , 6 -- (3+4+5+6+7+8+9)/7
-                        , 7 -- (4+5+6+7+8+9+10)/7
+                        [ ( 7, 4 ) -- (1+2+3+4+5+6+7)/7 == 4
+                        , ( 8, 5 ) -- (2+3+4+5+6+7+8)/7 == 5
+                        , ( 9, 6 ) -- (3+4+5+6+7+8+9)/7 == 6
+                        , ( 10, 7 ) -- (4+5+6+7+8+9+10)/7 == 7
                         ]
         ]

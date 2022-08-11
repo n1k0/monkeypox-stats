@@ -118,8 +118,16 @@ sevenDaysAverage country events =
         |> List.filterMap
             (\list ->
                 list
+                    |> List.reverse
                     |> List.head
-                    |> Maybe.map (\e -> { e | cases = (list |> List.map .cases |> List.sum) / toFloat (List.length list) })
+                    |> Maybe.map
+                        (\e ->
+                            { e
+                                | cases =
+                                    (list |> List.map .cases |> List.sum)
+                                        / toFloat (List.length list)
+                            }
+                        )
             )
 
 
