@@ -17,7 +17,6 @@ import Time exposing (Posix)
 type alias Model =
     { mode : Mode
     , events : List Event
-    , country : Maybe String
     , hovering : Dict String (List Charts.Hovered)
     }
 
@@ -25,7 +24,6 @@ type alias Model =
 type Msg
     = DataReceived (Result Http.Error (List Event))
     | OnHover String (List Charts.Hovered)
-    | SwitchCountry (Maybe String)
     | SwitchMode Mode
 
 
@@ -38,7 +36,6 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { mode = Cumulative
       , events = []
-      , country = Nothing
       , hovering = Dict.fromList []
       }
     , Http.get
@@ -89,9 +86,6 @@ update msg model =
               }
             , Cmd.none
             )
-
-        SwitchCountry country ->
-            ( { model | country = country }, Cmd.none )
 
         SwitchMode mode ->
             ( { model | mode = mode }, Cmd.none )
