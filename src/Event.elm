@@ -3,13 +3,17 @@ module Event exposing
     , accumulate
     , countries
     , decodeList
+    , formatCases
     , formatDate
     , fromCountry
+    , sevenDaysAverage
     , sumByDate
     , total
     )
 
 import DateFormat
+import FormatNumber
+import FormatNumber.Locales exposing (Decimals(..), usLocale)
 import Iso8601
 import Json.Decode as Decode exposing (Decoder)
 import List.Extra as LE
@@ -20,7 +24,7 @@ import Time exposing (Posix)
 type alias Event =
     { date : Posix
     , country : String
-    , cases : Int
+    , cases : Float
     }
 
 
@@ -53,12 +57,17 @@ decode =
     Decode.map3 Event
         (Decode.field "DateRep" Iso8601.decoder)
         (Decode.field "CountryExp" Decode.string)
-        (Decode.field "ConfCases" Decode.int)
+        (Decode.field "ConfCases" Decode.float)
 
 
 decodeList : Decoder (List Event)
 decodeList =
     Decode.list decode
+
+
+formatCases : Float -> String
+formatCases =
+    FormatNumber.format { usLocale | decimals = Exact 2 }
 
 
 formatDate : Posix -> String
@@ -79,11 +88,10 @@ fromCountry country =
 
 
 sumByDate : String -> List Event -> List Event
-sumByDate label events =
-    events
-        |> List.sortBy (.date >> Time.posixToMillis)
-        |> LE.groupWhile (\a b -> a.date == b.date)
-        |> List.map
+sumByDate label =
+    List.sortBy (.date >> Time.posixToMillis)
+        >> LE.groupWhile (\a b -> a.date == b.date)
+        >> List.map
             (\( event, list ) ->
                 { event
                     | country = label
@@ -92,7 +100,26 @@ sumByDate label events =
             )
 
 
-total : List Event -> Maybe ( Posix, Int )
+sevenDaysAverage : String -> List Event -> List Event
+sevenDaysAverage country events =
+    events
+        |> (if country == "Europe" then
+                sumByDate "Europe"
+
+            else
+                fromCountry country
+           )
+        |> LE.greedyGroupsOfWithStep 7 1
+        |> List.filter (List.length >> (==) 7)
+        |> List.filterMap
+            (\list ->
+                list
+                    |> List.head
+                    |> Maybe.map (\e -> { e | cases = (list |> List.map .cases |> List.sum) / toFloat (List.length list) })
+            )
+
+
+total : List Event -> Maybe ( Posix, Float )
 total =
     accumulate
         >> LE.last

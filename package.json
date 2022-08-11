@@ -16,6 +16,7 @@
     "@parcel/transformer-sass": "^2.6.2",
     "bootstrap": "^5.2.0",
     "elm-format": "^0.8.5",
+    "elm-test": "^0.19.1-revision9",
     "gh-pages": "^4.0.0",
     "parcel": "^2.7.0",
     "rimraf": "^3.0.2"

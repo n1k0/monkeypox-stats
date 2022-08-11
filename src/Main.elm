@@ -28,6 +28,7 @@ type Msg
 type Mode
     = Cumulative
     | PerDay
+    | SevenDaysAverage
 
 
 init : () -> ( Model, Cmd Msg )
@@ -85,7 +86,7 @@ viewCountry { hovering, events, mode } country =
                     [ case Event.total countryEvents of
                         Just ( date, tot ) ->
                             small [ class "text-muted fs-7 ms-2" ]
-                                [ text <| String.fromInt tot ++ " tot. on " ++ Event.formatDate date ]
+                                [ text <| String.fromFloat tot ++ " tot. on " ++ Event.formatDate date ]
 
                         Nothing ->
                             text ""
@@ -99,6 +100,9 @@ viewCountry { hovering, events, mode } country =
 
                             PerDay ->
                                 identity
+
+                            SevenDaysAverage ->
+                                Event.sevenDaysAverage country
                        )
                     |> Charts.view
                         { hovering = hovering |> Dict.get country |> Maybe.withDefault []
@@ -125,6 +129,9 @@ viewEurope { events, hovering, mode } =
 
                         PerDay ->
                             identity
+
+                        SevenDaysAverage ->
+                            Event.sevenDaysAverage "Europe"
                    )
                 |> Charts.view
                     { hovering = hovering |> Dict.get "Europe" |> Maybe.withDefault []
@@ -154,7 +161,7 @@ view model =
                         Just ( date, tot ) ->
                             p [ class "text-muted fw-bold" ]
                                 [ text <|
-                                    String.fromInt tot
+                                    String.fromFloat tot
                                         ++ " total confirmed cases as of "
                                         ++ Event.formatDate date
                                         ++ " in Europe — Source: "
@@ -165,30 +172,25 @@ view model =
                         Nothing ->
                             text ""
                     ]
-                , div [ class "col-md-4 d-flex justify-content-center justify-content-md-end gap-4" ]
-                    [ label [ class "form-check-label" ]
-                        [ input
-                            [ type_ "radio"
-                            , class "form-check-input"
-                            , name "mode"
-                            , checked <| model.mode == Cumulative
-                            , onCheck (always (SwitchMode Cumulative))
-                            ]
-                            []
-                        , span [ class "ms-2" ] [ text "Cumulative" ]
-                        ]
-                    , label [ class "form-check-label" ]
-                        [ input
-                            [ type_ "radio"
-                            , class "form-check-input"
-                            , name "mode"
-                            , checked <| model.mode == PerDay
-                            , onCheck (always (SwitchMode PerDay))
-                            ]
-                            []
-                        , span [ class "ms-2" ] [ text "Per-day" ]
-                        ]
-                    ]
+                , [ ( Cumulative, "Cumulative" )
+                  , ( PerDay, "Per-day" )
+                  , ( SevenDaysAverage, "7 days average" )
+                  ]
+                    |> List.map
+                        (\( mode, caption ) ->
+                            label [ class "form-check-label" ]
+                                [ input
+                                    [ type_ "radio"
+                                    , class "form-check-input"
+                                    , name "mode"
+                                    , checked <| model.mode == mode
+                                    , onCheck (always (SwitchMode mode))
+                                    ]
+                                    []
+                                , span [ class "ms-2" ] [ text caption ]
+                                ]
+                        )
+                    |> div [ class "col-md-4 d-flex justify-content-center justify-content-md-end gap-4" ]
                 ]
             , viewEurope model
             , Event.countries allEvents

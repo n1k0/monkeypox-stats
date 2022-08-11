@@ -55,7 +55,7 @@ view { hovering, onHover, pointLabel, width, height } events =
         , C.yLabels [ CA.withGrid ]
         , events
             |> C.series (.date >> Time.posixToMillis >> toFloat)
-                [ C.interpolated (.cases >> toFloat) [ CA.width 2 ] []
+                [ C.interpolated .cases [ CA.width 2 ] []
                     |> C.named pointLabel
                 ]
         , C.each hovering <|
@@ -78,7 +78,7 @@ tooltip color { country, date, cases } =
             [ H.text country
             , H.span [ HA.style "color" color ]
                 [ H.text ": "
-                , H.text (String.fromInt cases)
+                , H.text (Event.formatCases cases)
                 , H.text <|
                     " case"
                         ++ (if cases == 1 then
