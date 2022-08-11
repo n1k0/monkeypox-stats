@@ -138,11 +138,11 @@ view model =
     , body =
         [ div [ class "container py-4" ]
             [ h1 [ class "mb-3" ] [ text "Monkeypox stats for EU" ]
-            , div [ class "row" ]
-                [ div [ class "col-md-8" ]
+            , div [ class "row my-2 align-items-end" ]
+                [ div [ class "col-md-6 col-lg-7 my-2" ]
                     [ case Event.total allEvents of
                         Just ( date, tot ) ->
-                            p [ class "text-muted fw-bold" ]
+                            div [ class "text-muted fw-bold" ]
                                 [ text <|
                                     String.fromFloat tot
                                         ++ " total confirmed cases as of "
@@ -161,7 +161,7 @@ view model =
                   ]
                     |> List.map
                         (\( mode, caption ) ->
-                            label [ class "form-check-label" ]
+                            label [ class "form-check-label text-nowrap" ]
                                 [ input
                                     [ type_ "radio"
                                     , class "form-check-input"
@@ -173,7 +173,7 @@ view model =
                                 , span [ class "ms-2" ] [ text caption ]
                                 ]
                         )
-                    |> div [ class "col-md-4 d-flex justify-content-center justify-content-md-end gap-4" ]
+                    |> div [ class "col-md-6 col-lg-5 my-2 d-flex justify-content-center justify-content-md-end gap-4" ]
                 ]
             , viewCard
                 { country = Nothing
