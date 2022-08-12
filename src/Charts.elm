@@ -1,4 +1,4 @@
-module Charts exposing (Hovered, view)
+module Charts exposing (Hovered, bars, line)
 
 import Chart as C
 import Chart.Attributes as CA
@@ -7,14 +7,40 @@ import Chart.Item as CI
 import Event exposing (Event)
 import Html as H
 import Html.Attributes as HA
+import Svg.Attributes as SA
 import Time
+
+
+bars : { width : Float, height : Float } -> List ( String, Float ) -> H.Html msg
+bars { width, height } data =
+    C.chart
+        [ CA.padding { top = 20, bottom = 75, left = 0, right = 25 }
+        , CA.margin { top = 10, bottom = 0, left = 60, right = 10 }
+        , CA.width width
+        , CA.height height
+        ]
+        [ C.yLabels [ CA.withGrid ]
+        , C.binLabels Tuple.first
+            [ CA.moveDown 10
+            , CA.moveRight 4
+            , CA.rotate 45
+            , CA.attrs
+                [ SA.style "text-anchor: end"
+                ]
+            ]
+        , C.bars []
+            [ C.bar Tuple.second []
+                |> C.named "plop"
+            ]
+            data
+        ]
 
 
 type alias Hovered =
     CI.One Event CI.Any
 
 
-type alias Config msg =
+type alias LineConfig msg =
     { onHover : List Hovered -> msg
     , hovering : List Hovered
     , width : Float
@@ -22,8 +48,8 @@ type alias Config msg =
     }
 
 
-view : Config msg -> List Event -> H.Html msg
-view { hovering, onHover, width, height } events =
+line : LineConfig msg -> List Event -> H.Html msg
+line { hovering, onHover, width, height } events =
     C.chart
         [ CA.width width
         , CA.height height

@@ -93,13 +93,17 @@ viewCard { country, events, hovering, mode, width, height } =
                     ( Event.sumByDate "Europe" events, "Europe" )
     in
     div [ class "card h-100" ]
-        [ div [ class "card-header d-flex justify-content-between" ]
+        [ div [ class "card-header d-flex flex-column flex-sm-row justify-content-between gap-2" ]
             [ span [] [ country |> Maybe.withDefault "Europe" |> text ]
             , span []
                 [ case Event.total selectedEvents of
                     Just ( date, tot ) ->
-                        small [ class "text-muted fs-7 ms-2" ]
-                            [ text <| String.fromFloat tot ++ " tot. on " ++ Event.formatDate date ]
+                        [ strong [] [ text (String.fromFloat tot) ]
+                        , text "total confirmed cases on"
+                        , text (Event.formatDate date)
+                        ]
+                            |> List.intersperse (text " ")
+                            |> small [ class "text-muted" ]
 
                     Nothing ->
                         text ""
@@ -117,7 +121,7 @@ viewCard { country, events, hovering, mode, width, height } =
                         SevenDaysAverage ->
                             Event.sevenDaysAverage countryId
                    )
-                |> Charts.view
+                |> Charts.line
                     { hovering = hovering |> Dict.get countryId |> Maybe.withDefault []
                     , onHover = OnHover countryId
                     , width = width
@@ -176,8 +180,8 @@ viewEvents model events =
         , events = allEvents
         , mode = model.mode
         , hovering = model.hovering
-        , width = 450 * 3
-        , height = 280 * 2
+        , width = 480 * 3
+        , height = 280 * 1.5
         }
     , Event.countries allEvents
         |> Set.toList
@@ -195,6 +199,14 @@ viewEvents model events =
                     ]
             )
         |> div [ class "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 my-3" ]
+    , div [ class "my-3" ]
+        [ allEvents
+            |> Event.sumByCountry
+            |> Charts.bars
+                { width = 480 * 3
+                , height = 280 * 1.8
+                }
+        ]
     ]
 
 

@@ -7,6 +7,7 @@ module Event exposing
     , formatDate
     , fromCountry
     , sevenDaysAverage
+    , sumByCountry
     , sumByDate
     , total
     )
@@ -89,6 +90,20 @@ formatDate =
 fromCountry : String -> List Event -> List Event
 fromCountry country =
     List.filter (.country >> (==) country)
+
+
+sumByCountry : List Event -> List ( String, Float )
+sumByCountry =
+    List.sortBy .country
+        >> LE.groupWhile (\a b -> a.country == b.country)
+        >> List.map
+            (\( event, list ) ->
+                ( event.country
+                , event.cases + (list |> List.map .cases |> List.sum)
+                )
+            )
+        >> List.sortBy Tuple.second
+        >> List.reverse
 
 
 sumByDate : String -> List Event -> List Event
