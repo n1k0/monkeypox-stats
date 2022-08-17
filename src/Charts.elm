@@ -19,7 +19,10 @@ bars { width, height } data =
         , CA.width width
         , CA.height height
         ]
-        [ C.yLabels [ CA.withGrid ]
+        [ C.yLabels
+            [ CA.withGrid
+            , CA.limits [ CA.lowest 0 CA.exactly ]
+            ]
         , C.binLabels Tuple.first
             [ CA.moveDown 10
             , CA.moveRight 4

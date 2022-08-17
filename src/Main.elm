@@ -199,7 +199,7 @@ viewEvents model events =
                     ]
             )
         |> div [ class "row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4 my-3" ]
-    , div [ class "my-3" ]
+    , div [ class "my-5" ]
         [ allEvents
             |> Event.sumByCountry
             |> Charts.bars
