@@ -49,7 +49,7 @@ init _ =
 
 dataUrl : String
 dataUrl =
-    "https://opendata.ecdc.europa.eu/monkeypox/casedistribution/json/data.jsons"
+    "https://opendata.ecdc.europa.eu/monkeypox/casedistribution/json/data.json"
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
