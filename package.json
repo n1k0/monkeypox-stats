@@ -6,23 +6,21 @@
   "scripts": {
     "deploy": "rimraf build && parcel build index.html --dist-dir build --public-url /monkeypox-stats && gh-pages --dist build/",
     "start": "PARCEL_ELM_NO_DEBUG=1 parcel serve index.html --no-cache",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "elm-test"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@parcel/packager-raw-url": "^2.7.0",
     "@parcel/transformer-elm": "^2.6.2",
     "@parcel/transformer-image": "^2.6.2",
     "@parcel/transformer-sass": "^2.6.2",
+    "@parcel/transformer-webmanifest": "^2.7.0",
     "bootstrap": "^5.2.0",
     "elm-format": "^0.8.5",
     "elm-test": "^0.19.1-revision9",
     "gh-pages": "^4.0.0",
     "parcel": "^2.7.0",
     "rimraf": "^3.0.2"
-  },
-  "devDependencies": {
-    "@parcel/packager-raw-url": "^2.7.0",
-    "@parcel/transformer-webmanifest": "^2.7.0"
   }
 }
