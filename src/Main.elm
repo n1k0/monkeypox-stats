@@ -49,7 +49,7 @@ init _ =
 
 dataUrl : String
 dataUrl =
-    "https://opendata.ecdc.europa.eu/monkeypox/casedistribution/json/data.json"
+    "https://opendata.ecdc.europa.eu/monkeypox/casedistribution/json/data.jsons"
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -232,8 +232,19 @@ view model =
                         ]
 
                     RemoteData.Failure error ->
-                        [ div [ class "alert alert-info" ]
-                            [ text <| errorToString error ]
+                        [ div [ class "alert alert-warning p-4" ]
+                            [ p [ class "fw-bold" ]
+                                [ text "Unable to retrieve "
+                                , a [ href dataUrl, target "_blank" ]
+                                    [ text "dataset" ]
+                                , text ":"
+                                ]
+                            , pre [] [ text <| errorToString error ]
+                            , div []
+                                [ a [ href "https://github.com/n1k0/monkeypox-stats/issues/new" ]
+                                    [ text "Report an issue" ]
+                                ]
+                            ]
                         ]
 
                     RemoteData.Success events ->
@@ -268,8 +279,8 @@ errorToString error =
         Http.BadStatus 400 ->
             "Verify your information and try again"
 
-        Http.BadStatus _ ->
-            "Unknown error"
+        Http.BadStatus status ->
+            "HTTP error " ++ String.fromInt status
 
         Http.BadBody errorMessage ->
             errorMessage
